@@ -10,6 +10,8 @@
 // @exclude        https://www.waze.com/*/user/*editor/*
 // @author         GyllieGyllie
 // @license        MIT/BSD/X11
+// @downloadURL    https://update.greasyfork.org/scripts/549529/WME%20RTC%20Manager.user.js
+// @updateURL      https://update.greasyfork.org/scripts/549529/WME%20RTC%20Manager.meta.js
 // @require        https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
 // ==/UserScript==
 /* Changelog
