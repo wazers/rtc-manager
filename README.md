@@ -1,0 +1,1 @@
+This scripts adds some useful tools to WME to manage existing or planned RTC
