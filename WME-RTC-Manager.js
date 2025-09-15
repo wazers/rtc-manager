@@ -4,7 +4,7 @@
 // @namespace      gylliegyllie@wazebelgium.be
 // @grant          none
 // @grant          GM_info
-// @version        0.0.1
+// @version        0.0.2
 // @include 	     /^https:\/\/(www|beta)\.waze\.com\/(?!user\/)(.{2,6}\/)?editor.*$/
 // @exclude        https://www.waze.com/user/*editor/*
 // @exclude        https://www.waze.com/*/user/*editor/*
@@ -26,7 +26,9 @@ const ScriptVersion = GM_info.script.version;
 
 let ChangeLog = "RTC Manager has been updated to " + ScriptVersion + "<br />";
 ChangeLog = ChangeLog + "<br /><b>New: </b>";
-ChangeLog = ChangeLog + "<br />" + "- Ability to select all linked segments with a matching closure";
+ChangeLog = ChangeLog + "<br />" + "- (0.0.1) Ability to select all linked segments with a matching closure";
+ChangeLog = ChangeLog + "<br /><b>Updated: </b>";
+ChangeLog = ChangeLog + "<br />" + "- (0.0.2) Fix not all segments being selected in some scenarios";
 
 let wmeSDK;
 const options = loadOptions();
@@ -161,9 +163,9 @@ function selectAll() {
   const nearbyClosures = wmeSDK.DataModel.RoadClosures.getAll();
 
   let closure = nearbyClosures.find(closure => ids.indexOf(closure.id) >= 0);
-  console.log(closure);
 
   const segmentIds = [];
+  const scanned = new Set();
   if (closure) {
     const segment = wmeSDK.DataModel.Segments.getById({ segmentId: closure.segmentId });
 
@@ -172,7 +174,7 @@ function selectAll() {
       return;
     }
 
-    appendSegments(segmentIds, segment, closure);
+    appendSegments(scanned, segmentIds, segment, closure);
   }
 
   wmeSDK.Editing.setSelection({
@@ -180,8 +182,7 @@ function selectAll() {
       ids: segmentIds,
       objectType: 'segment'
     }
-  })
-  console.log(segmentIds);
+  });
 }
 
 function deleteAll() {
@@ -209,12 +210,14 @@ function deleteAll() {
 
 }
 
-function appendSegments(segmentIds, segment, originalClosure) {
-  // Segment already there
-  if (segmentIds.indexOf(segment.id) >= 0) {
+function appendSegments(scanned, segmentIds, segment, originalClosure) {
+
+  // This was already scanned
+  if (scanned.has(segment.id)) {
     return;
   }
 
+  scanned.add(segment.id);
   const closures = wmeSDK.DataModel.RoadClosures.getAll().filter(rc => rc.segmentId === segment.id);
 
   // See if any closure matches
@@ -229,10 +232,16 @@ function appendSegments(segmentIds, segment, originalClosure) {
     }
   }
 
-  const linkedSegments = wmeSDK.DataModel.Segments.getConnectedSegments({ segmentId: segment.id });
+  let linkedSegments = wmeSDK.DataModel.Segments.getConnectedSegments({ segmentId: segment.id });
 
   for (let ls of linkedSegments) {
-    appendSegments(segmentIds, ls, originalClosure);
+    appendSegments(scanned, segmentIds, ls, originalClosure);
+  }
+
+  linkedSegments = wmeSDK.DataModel.Segments.getConnectedSegments({ segmentId: segment.id, reverseDirection: true });
+
+  for (let ls of linkedSegments) {
+    appendSegments(scanned, segmentIds, ls, originalClosure);
   }
 }
 
